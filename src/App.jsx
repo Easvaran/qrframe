@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
-import ARMemoryPage from './pages/ARMemoryPage'
+import DirectVideoPage from './pages/DirectVideoPage'
 import { APP_CONFIG } from './config/appConfig'
 
 function App() {
@@ -19,7 +19,7 @@ function App() {
   const isMemoryRoute = /^\/memory\//.test(pathname)
 
   if (isMemoryRoute) {
-    return <ARMemoryPage />
+    return <DirectVideoPage />
   }
 
   const qrValue = APP_CONFIG.qr.getMemoryUrl('wedding-001')
@@ -36,7 +36,7 @@ function App() {
         </div>
 
         <p className="mt-6 text-center text-sm uppercase tracking-[0.2em] text-[#f5e5d1]">
-          Scan to open AR Memory
+          Scan to watch the wedding memory
         </p>
       </div>
     </main>

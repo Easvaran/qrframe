@@ -1,6 +1,6 @@
 import { APP_CONFIG } from '../config/appConfig'
 
-// Memory URL - defaults to app's current URL
+// Direct video URL used by the QR display and memory page.
 export const MEMORY_URL = APP_CONFIG.qr.getMemoryUrl('wedding-001')
 
 export const memories = {
@@ -8,14 +8,12 @@ export const memories = {
     id: 'wedding-001',
     qrValue: APP_CONFIG.qr.getMemoryUrl('wedding-001'),
     video: '/assets/video/wedding-video.mp4',
-    target: '/targets/wedding-frame.mind',
     title: 'Wedding Memory',
   },
   'wedding-002': {
     id: 'wedding-002',
     qrValue: APP_CONFIG.qr.getMemoryUrl('wedding-002'),
     video: '/assets/video/wedding-video.mp4',
-    target: '/targets/wedding-frame.mind',
     title: 'Wedding Memory 2',
   },
 }

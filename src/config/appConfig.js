@@ -3,6 +3,8 @@
  * This ensures consistent URL handling across development and production
  */
 
+const PRODUCTION_URL = 'https://qrframe-23fm.vercel.app'
+
 // Get the app's base URL based on environment
 const getAppUrl = () => {
   // First priority: Explicit VITE_APP_URL from environment (for custom domains)
@@ -41,14 +43,12 @@ export const APP_CONFIG = {
   qr: {
     // Main memory unlock path
     getMemoryUrl: (memoryId = 'wedding-001') => {
-      const baseUrl = getAppUrl()
-      return `${baseUrl}/memory/${memoryId}`
+      return `${PRODUCTION_URL}/memory/${memoryId}`
     },
 
     // Alternative direct path
     getFrameViewerUrl: (memoryId = 'wedding-001') => {
-      const baseUrl = getAppUrl()
-      return `${baseUrl}/memory/${memoryId}`
+      return `${PRODUCTION_URL}/memory/${memoryId}`
     },
   },
 

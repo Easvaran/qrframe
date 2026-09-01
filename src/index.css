@@ -39,15 +39,9 @@ input {
 }
 
 img,
-video,
-canvas {
+video {
   display: block;
   max-width: 100%;
-}
-
-canvas {
-  width: 100vw !important;
-  height: 100dvh !important;
 }
 
 ::selection {
