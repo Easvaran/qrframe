@@ -10,4 +10,8 @@ export default defineConfig({
     port: 8000,
     https: true,
   },
+  build: {
+    outDir: 'dist',
+    emptyOutDir: true,
+  },
 })
