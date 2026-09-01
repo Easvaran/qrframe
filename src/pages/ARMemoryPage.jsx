@@ -5,6 +5,7 @@ import MindARScene from '../ar/MindARScene'
 import ARStatus from '../components/ARStatus'
 import SoundButton from '../components/SoundButton'
 import StartAR from '../components/StartAR'
+import QRScanner from '../components/QRScanner'
 import { getMemory } from '../data/memories'
 
 const MEMORY_ID = 'wedding-001'
@@ -18,6 +19,8 @@ export default function ARMemoryPage() {
   const [videoReady, setVideoReady] = useState(false)
   const [audioEnabled, setAudioEnabled] = useState(false)
   const [deviceError, setDeviceError] = useState('')
+  const [showScanner, setShowScanner] = useState(false)
+  const [qrScanned, setQrScanned] = useState(false)
 
   useEffect(() => {
     const checkMobile = () => {
@@ -76,6 +79,16 @@ export default function ARMemoryPage() {
     video.play().catch(() => undefined)
   }
 
+  const handleQrScanned = (qrValue) => {
+    console.log('QR Scanned:', qrValue)
+    setQrScanned(true)
+    setShowScanner(false)
+    // Proceed to AR after QR is scanned
+    setTimeout(() => {
+      handleStart()
+    }, 1000)
+  }
+
   return (
     <main className="relative h-[100dvh] overflow-hidden bg-black text-white">
       <div className="absolute inset-0 hidden items-end justify-center pb-5 md:flex">
@@ -115,7 +128,13 @@ export default function ARMemoryPage() {
         </>
       )}
 
-      {!hasStarted && <StartAR onStart={handleStart} />}
+      {!hasStarted && !showScanner && <StartAR onStart={() => setShowScanner(true)} />}
+
+      {!hasStarted && showScanner && (
+        <div className="h-full w-full">
+          <QRScanner onQrDetected={handleQrScanned} title="Scan QR Code" />
+        </div>
+      )}
 
       {deviceError && (
         <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/75 px-6">
