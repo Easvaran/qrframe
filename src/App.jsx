@@ -1,6 +1,26 @@
+import { useEffect, useState } from 'react'
 import QRScanner from './components/QRScanner'
+import ARMemoryPage from './pages/ARMemoryPage'
 
 function App() {
+  const [pathname, setPathname] = useState(() => window.location.pathname)
+
+  useEffect(() => {
+    const updatePath = () => setPathname(window.location.pathname)
+    updatePath()
+    window.addEventListener('popstate', updatePath)
+
+    return () => {
+      window.removeEventListener('popstate', updatePath)
+    }
+  }, [])
+
+  const isMemoryRoute = /^\/memory\//.test(pathname)
+
+  if (isMemoryRoute) {
+    return <ARMemoryPage />
+  }
+
   const handleQrDetected = (value) => {
     console.log('QR detected:', value)
   }
