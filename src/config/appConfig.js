@@ -42,13 +42,13 @@ export const APP_CONFIG = {
     // Main memory unlock path
     getMemoryUrl: (memoryId = 'wedding-001') => {
       const baseUrl = getAppUrl()
-      return `${baseUrl}/?memory=${memoryId}`
+      return `${baseUrl}/memory/${memoryId}`
     },
 
     // Alternative direct path
     getFrameViewerUrl: (memoryId = 'wedding-001') => {
       const baseUrl = getAppUrl()
-      return `${baseUrl}/?viewer=${memoryId}`
+      return `${baseUrl}/memory/${memoryId}`
     },
   },
 
