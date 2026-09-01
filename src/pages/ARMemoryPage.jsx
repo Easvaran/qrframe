@@ -3,6 +3,8 @@ import { AlertTriangle, Camera, Volume2 } from 'lucide-react'
 import MindARScene from '../ar/MindARScene'
 import { getMemoryForPath } from '../data/memories'
 
+const FRAME_DETECTION_TIMEOUT = 10000
+
 const MESSAGE_COPY = {
   PREPARING: 'Preparing your memory...',
   REQUESTING_PERMISSION: 'Camera access is needed to bring this frame to life.',
@@ -19,14 +21,38 @@ export default function ARMemoryPage() {
   const [showStartButton, setShowStartButton] = useState(false)
   const [videoReady, setVideoReady] = useState(false)
   const [audioEnabled, setAudioEnabled] = useState(false)
+  const [frameDetected, setFrameDetected] = useState(false)
+  const [showFallbackModal, setShowFallbackModal] = useState(false)
+  const [isFallbackVideo, setIsFallbackVideo] = useState(false)
+  const [arEnabled, setArEnabled] = useState(true)
   const [deviceError, setDeviceError] = useState('')
   const cameraStreamRef = useRef(null)
+  const fallbackVideoRef = useRef(null)
+
+  useEffect(() => {
+    if (frameDetected) {
+      return undefined
+    }
+
+    const timer = setTimeout(() => {
+      console.log('Physical frame NOT detected after timeout')
+      setShowFallbackModal(true)
+      console.log('Showing fallback modal')
+    }, FRAME_DETECTION_TIMEOUT)
+
+    return () => clearTimeout(timer)
+  }, [frameDetected])
 
   const startExperience = async () => {
+    setArEnabled(true)
+    setFrameDetected(false)
+    setShowFallbackModal(false)
+    setIsFallbackVideo(false)
     setIsStarted(true)
     setShowStartButton(false)
     setDeviceError('')
     setArState('REQUESTING_PERMISSION')
+    console.log('AR started')
 
     if (!navigator.mediaDevices?.getUserMedia) {
       setArState('ERROR')
@@ -46,6 +72,7 @@ export default function ARMemoryPage() {
 
       cameraStreamRef.current = stream
       setArState('SEARCHING_FRAME')
+      console.log('Searching for physical frame...')
     } catch (error) {
       console.error('Camera prompt blocked:', error)
       setIsStarted(false)
@@ -85,8 +112,67 @@ export default function ARMemoryPage() {
     setArState(nextState)
   }
 
+  const handleTargetFound = () => {
+    setFrameDetected(true)
+    setShowFallbackModal(false)
+    console.log('Physical frame detected')
+  }
+
+  const handleTargetLost = () => {
+    setFrameDetected(false)
+    // Do not show the fallback modal here; timeout-driven fallback is the only trigger.
+  }
+
   const handleVideoReady = (ready) => {
     setVideoReady(ready)
+  }
+
+  const stopCamera = () => {
+    if (cameraStreamRef.current) {
+      cameraStreamRef.current.getTracks().forEach((track) => track.stop())
+      cameraStreamRef.current = null
+    }
+  }
+
+  const playFallbackVideo = async () => {
+    const video = fallbackVideoRef.current
+    if (!video || !memory) {
+      return
+    }
+
+    try {
+      video.muted = false
+      video.volume = 1
+      video.playsInline = true
+      video.controls = true
+      await video.play()
+      setAudioEnabled(true)
+    } catch (error) {
+      console.warn('Fallback video autoplay blocked:', error)
+      setAudioEnabled(false)
+    }
+  }
+
+  const handleFallbackVideo = async () => {
+    console.log('User selected fallback video')
+    stopCamera()
+    setArEnabled(false)
+    setIsFallbackVideo(true)
+    setShowFallbackModal(false)
+    setFrameDetected(false)
+    setArState('PLAYING')
+
+    await playFallbackVideo()
+  }
+
+  const handleKeepTrying = () => {
+    console.log('User selected keep trying')
+    setShowFallbackModal(false)
+    setFrameDetected(false)
+    setIsFallbackVideo(false)
+    setArEnabled(true)
+    setArState('SEARCHING_FRAME')
+    console.log('Searching for physical frame...')
   }
 
   const enableSound = () => {
@@ -105,10 +191,12 @@ export default function ARMemoryPage() {
 
   return (
     <main className="relative h-[100dvh] w-[100vw] overflow-hidden bg-black text-white">
-      {isStarted && memory && (
+      {isStarted && memory && arEnabled && !isFallbackVideo && (
         <MindARScene
           videoSrc={memory.video}
           targetSrc={memory.target}
+          onTargetFound={handleTargetFound}
+          onTargetLost={handleTargetLost}
           onTracking={handleTracking}
           onVideoReady={handleVideoReady}
           onError={(error) => {
@@ -140,6 +228,62 @@ export default function ARMemoryPage() {
       {!showStartButton && !deviceError && (
         <div className="pointer-events-none absolute left-1/2 top-5 z-20 -translate-x-1/2 rounded-full border border-white/15 bg-black/35 px-4 py-2 text-center text-[10px] uppercase tracking-[0.32em] text-white/90 backdrop-blur-md">
           {renderStatusText}
+        </div>
+      )}
+
+      {showFallbackModal && !frameDetected && !isFallbackVideo && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/75 px-4 py-6 backdrop-blur-sm">
+          <div className="w-full max-w-sm overflow-hidden rounded-[28px] border border-[#d8b789]/40 bg-[#151311]/95 text-center shadow-[0_24px_60px_rgba(0,0,0,0.55)]">
+            <div className="px-6 pb-5 pt-7">
+              <p className="text-2xl font-medium text-white">Frame not detected</p>
+              <p className="mt-4 text-base leading-7 text-[#f2e7d8]">
+                Would you like to watch the wedding video without AR?
+              </p>
+
+              <button
+                type="button"
+                onClick={handleFallbackVideo}
+                className="mt-6 w-full rounded-full border border-[#d9b77d] bg-[#f1d4a3] px-4 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-[#1d1714]"
+              >
+                YES, PLAY VIDEO
+              </button>
+
+              <button
+                type="button"
+                onClick={handleKeepTrying}
+                className="mt-3 w-full rounded-full border border-white/15 bg-transparent px-4 py-3 text-sm font-medium uppercase tracking-[0.18em] text-[#f7efe8]"
+              >
+                KEEP TRYING
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isFallbackVideo && memory && (
+        <div className="absolute inset-0 z-40 bg-black">
+          <video
+            ref={fallbackVideoRef}
+            src={memory.video}
+            className="h-full w-full object-cover"
+            playsInline
+            controls
+            autoPlay
+            muted={false}
+            onCanPlay={() => { void playFallbackVideo() }}
+            onError={(event) => console.error('Fallback video failed to load', event)}
+          />
+
+          {!audioEnabled && (
+            <button
+              type="button"
+              onClick={playFallbackVideo}
+              className="absolute bottom-6 left-1/2 z-50 inline-flex -translate-x-1/2 items-center gap-2 rounded-full border border-[#d9c4a3] bg-[#201d1c]/80 px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.24em] text-[#f9f3ed] shadow-[0_12px_26px_rgba(0,0,0,0.28)] backdrop-blur-md"
+            >
+              <Volume2 className="h-4 w-4" />
+              Tap to enable sound
+            </button>
+          )}
         </div>
       )}
 

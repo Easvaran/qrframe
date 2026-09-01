@@ -3,7 +3,15 @@ import * as THREE from 'three'
 import { MindARThree } from 'mind-ar/dist/mindar-image-three.prod.js'
 import { AR_VIDEO_CONFIG } from './arConfig'
 
-export default function MindARScene({ videoSrc, targetSrc, onTracking, onVideoReady, onError }) {
+export default function MindARScene({
+  videoSrc,
+  targetSrc,
+  onTracking,
+  onVideoReady,
+  onTargetFound,
+  onTargetLost,
+  onError,
+}) {
   const containerRef = useRef(null)
 
   const videoConfig = useMemo(() => AR_VIDEO_CONFIG, [])
@@ -77,6 +85,8 @@ export default function MindARScene({ videoSrc, targetSrc, onTracking, onVideoRe
         anchor.group.add(plane)
 
         anchor.onTargetFound = () => {
+          console.log('Physical frame detected')
+          onTargetFound?.()
           onTracking('FRAME_FOUND')
           onVideoReady(true)
           video.play().then(() => {
@@ -87,6 +97,8 @@ export default function MindARScene({ videoSrc, targetSrc, onTracking, onVideoRe
         }
 
         anchor.onTargetLost = () => {
+          console.log('Physical frame lost')
+          onTargetLost?.()
           onTracking('SEARCHING_FRAME')
           if (!video.paused) {
             video.pause()
@@ -102,6 +114,8 @@ export default function MindARScene({ videoSrc, targetSrc, onTracking, onVideoRe
         }
         renderLoop()
 
+        console.log('AR started')
+        console.log('Searching for physical frame...')
         onTracking('SEARCHING_FRAME')
         onVideoReady(true)
       } catch (error) {
@@ -133,7 +147,7 @@ export default function MindARScene({ videoSrc, targetSrc, onTracking, onVideoRe
         container.innerHTML = ''
       }
     }
-  }, [onError, onTracking, onVideoReady, targetSrc, videoConfig, videoSrc])
+  }, [onError, onTargetFound, onTargetLost, onTracking, onVideoReady, targetSrc, videoConfig, videoSrc])
 
   return (
     <div
