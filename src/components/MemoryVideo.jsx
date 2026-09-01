@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Fullscreen, Pause, Play, Volume2, VolumeX } from 'lucide-react'
+import { Fullscreen, Pause, Play } from 'lucide-react'
 import AudioButton from './AudioButton'
 
 export default function MemoryVideo({ src, poster, autoplay = true, muted = true }) {

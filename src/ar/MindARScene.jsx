@@ -1,23 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { MindARThree } from 'mind-ar/dist/mindar-image-three.prod.js'
+import { AR_VIDEO_CONFIG } from './arConfig'
 
-export default function MindARScene({ videoSrc, targetSrc, onTracking, onQrReady, onVideoReady, onError }) {
+export default function MindARScene({ videoSrc, targetSrc, onTracking, onVideoReady, onError }) {
   const containerRef = useRef(null)
-  const sceneRef = useRef(null)
-  const videoRef = useRef(null)
-  const [status, setStatus] = useState('INITIAL')
 
-  const videoConfig = useMemo(
-    () => ({
-      width: 1.0,
-      height: 1.0,
-      offsetX: 0,
-      offsetY: 0,
-      rotation: 0,
-    }),
-    [],
-  )
+  const videoConfig = useMemo(() => AR_VIDEO_CONFIG, [])
 
   useEffect(() => {
     const container = containerRef.current
@@ -29,11 +18,15 @@ export default function MindARScene({ videoSrc, targetSrc, onTracking, onQrReady
     let animationFrame = null
     let targetAnchor = null
     let videoTexture = null
+    let video = null
 
     const init = async () => {
       try {
-        setStatus('STARTING_CAMERA')
-        onTracking('STARTING_CAMERA')
+        if (!videoSrc || !targetSrc) {
+          throw new Error('Missing AR video or target source.')
+        }
+
+        onTracking('REQUESTING_PERMISSION')
 
         mindar = new MindARThree({
           container,
@@ -47,16 +40,17 @@ export default function MindARScene({ videoSrc, targetSrc, onTracking, onQrReady
         await mindar.start()
 
         const { scene, camera, renderer } = mindar
-        sceneRef.current = { scene, camera, renderer }
 
-        const video = document.createElement('video')
+        video = document.createElement('video')
         video.src = videoSrc
         video.crossOrigin = 'anonymous'
         video.playsInline = true
+        video.webkitPlaysInline = true
         video.loop = true
         video.muted = false
+        video.volume = 1
+        video.autoplay = true
         video.preload = 'auto'
-        videoRef.current = video
 
         await new Promise((resolve, reject) => {
           video.onloadeddata = () => resolve()
@@ -65,10 +59,14 @@ export default function MindARScene({ videoSrc, targetSrc, onTracking, onQrReady
         })
 
         videoTexture = new THREE.VideoTexture(video)
-        videoTexture.colorSpace = THREE.LinearSRGBColorSpace
+        videoTexture.colorSpace = THREE.SRGBColorSpace
         videoTexture.needsUpdate = true
 
-        const material = new THREE.MeshBasicMaterial({ map: videoTexture, transparent: true, side: THREE.DoubleSide })
+        const material = new THREE.MeshBasicMaterial({
+          map: videoTexture,
+          transparent: true,
+          side: THREE.DoubleSide,
+        })
         const geometry = new THREE.PlaneGeometry(videoConfig.width, videoConfig.height)
         const plane = new THREE.Mesh(geometry, material)
         plane.position.set(videoConfig.offsetX, videoConfig.offsetY, 0)
@@ -79,40 +77,35 @@ export default function MindARScene({ videoSrc, targetSrc, onTracking, onQrReady
         anchor.group.add(plane)
 
         anchor.onTargetFound = () => {
-          setStatus('QR_FOUND')
-          onTracking('QR_FOUND')
-          onQrReady(true)
-          if (video) {
-            video.play().catch(() => {
-              onTracking('PLAYING')
-              setStatus('PLAYING')
-            })
-          }
+          onTracking('FRAME_FOUND')
+          onVideoReady(true)
+          video.play().then(() => {
+            onTracking('PLAYING')
+          }).catch(() => {
+            onTracking('PLAYING')
+          })
         }
 
         anchor.onTargetLost = () => {
-          setStatus('SEARCHING_FRAME')
           onTracking('SEARCHING_FRAME')
-          onQrReady(false)
-        }
-
-        const startRender = () => {
-          const renderLoop = () => {
-            if (mindar && scene && camera && renderer) {
-              renderer.render(scene, camera)
-            }
-            animationFrame = requestAnimationFrame(renderLoop)
+          if (!video.paused) {
+            video.pause()
           }
-          renderLoop()
+          onVideoReady(false)
         }
 
-        startRender()
-        setStatus('SEARCHING_FRAME')
+        const renderLoop = () => {
+          if (mindar && scene && camera && renderer) {
+            renderer.render(scene, camera)
+          }
+          animationFrame = requestAnimationFrame(renderLoop)
+        }
+        renderLoop()
+
         onTracking('SEARCHING_FRAME')
         onVideoReady(true)
       } catch (error) {
         console.error(error)
-        setStatus('ERROR')
         onError(error)
         onTracking('ERROR')
       }
@@ -121,22 +114,33 @@ export default function MindARScene({ videoSrc, targetSrc, onTracking, onQrReady
     init()
 
     return () => {
-      if (animationFrame) cancelAnimationFrame(animationFrame)
-      if (videoTexture) videoTexture.dispose()
-      if (targetAnchor && targetAnchor.group) targetAnchor.group.clear()
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame)
+      }
+      if (videoTexture) {
+        videoTexture.dispose()
+      }
+      if (targetAnchor && targetAnchor.group) {
+        targetAnchor.group.clear()
+      }
       if (mindar) {
         mindar.stop()
       }
-      if (videoRef.current) {
-        videoRef.current.pause()
+      if (video) {
+        video.pause()
       }
       if (container) {
         container.innerHTML = ''
       }
     }
-  }, [onError, onQrReady, onTracking, onVideoReady, targetSrc, videoConfig, videoSrc])
+  }, [onError, onTracking, onVideoReady, targetSrc, videoConfig, videoSrc])
 
   return (
-    <div ref={containerRef} className="absolute inset-0 h-full w-full bg-black" aria-label="AR camera view" />
+    <div
+      ref={containerRef}
+      className="absolute inset-0 h-full w-full bg-black"
+      style={{ width: '100vw', height: '100dvh' }}
+      aria-label="AR camera view"
+    />
   )
 }

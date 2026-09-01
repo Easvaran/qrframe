@@ -1,4 +1,4 @@
-import { AlertTriangle, Wifi, WifiOff, RotateCw } from 'lucide-react'
+import { AlertTriangle, WifiOff, RotateCw } from 'lucide-react'
 
 export default function NetworkError({ onRetry, errorMessage }) {
   return (

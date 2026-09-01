@@ -25,6 +25,8 @@ html, body, #root {
 body {
   overscroll-behavior: none;
   touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 * {
@@ -41,6 +43,11 @@ video,
 canvas {
   display: block;
   max-width: 100%;
+}
+
+canvas {
+  width: 100vw !important;
+  height: 100dvh !important;
 }
 
 ::selection {
