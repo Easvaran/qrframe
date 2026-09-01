@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import FrameDisplay from '../components/FrameDisplay'
 import QRScanner from '../components/QRScanner'
@@ -14,11 +14,21 @@ export default function FrameViewerPage() {
   const [isPlaying, setIsPlaying] = useState(true)
   const [isMuted, setIsMuted] = useState(true)
   const [deviceError, setDeviceError] = useState('')
+  const videoRef = useRef(null)
 
   const handleQrScanned = (qrValue) => {
     console.log('QR Scanned:', qrValue)
     setShowScanner(false)
     setVideoReady(true)
+    setIsPlaying(true)
+    // Auto-play video after short delay
+    setTimeout(() => {
+      if (videoRef.current) {
+        videoRef.current.play().catch((err) => {
+          console.log('Auto-play blocked, user gesture required')
+        })
+      }
+    }, 500)
   }
 
   const handlePlayToggle = () => {
@@ -63,6 +73,7 @@ export default function FrameViewerPage() {
           isMuted={isMuted}
           onPlayToggle={handlePlayToggle}
           onMuteToggle={handleMuteToggle}
+          videoRef={videoRef}
         />
       )}
 

@@ -1,13 +1,19 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Play, Pause, Volume2, VolumeX } from 'lucide-react'
 
-export default function FrameDisplay({ videoSrc, isPlaying, isMuted, onPlayToggle, onMuteToggle }) {
+export default function FrameDisplay({ videoSrc, isPlaying, isMuted, onPlayToggle, onMuteToggle, videoRef }) {
   const [isVideoReady, setIsVideoReady] = useState(false)
 
+  useEffect(() => {
+    if (videoRef?.current && isPlaying) {
+      videoRef.current.play().catch((err) => console.log('Play error:', err))
+    }
+  }, [isPlaying, videoRef])
+
   return (
-    <div className="flex h-full w-full gap-6 p-6">
+    <div className="flex h-full w-full gap-6 p-4 sm:p-6 bg-[#0f0c0a]">
       {/* Frame Display - Left Side */}
-      <div className="flex flex-1 items-center justify-center">
+      <div className="flex flex-1 items-center justify-center min-h-0">
         <div className="relative w-full max-w-md">
           {/* Outer Frame */}
           <div className="relative aspect-video overflow-hidden rounded-3xl border-[20px] border-[#2a1810] bg-black shadow-2xl">
@@ -21,6 +27,7 @@ export default function FrameDisplay({ videoSrc, isPlaying, isMuted, onPlayToggl
             <div className="relative h-full w-full bg-black">
               {videoSrc ? (
                 <video
+                  ref={videoRef}
                   src={videoSrc}
                   className="h-full w-full object-cover"
                   autoPlay
@@ -28,6 +35,7 @@ export default function FrameDisplay({ videoSrc, isPlaying, isMuted, onPlayToggl
                   muted={isMuted}
                   onLoadedMetadata={() => setIsVideoReady(true)}
                   playsInline
+                  onError={(e) => console.error('Video error:', e)}
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center bg-gradient-to-b from-[#1a0f08] to-black">
@@ -56,27 +64,34 @@ export default function FrameDisplay({ videoSrc, isPlaying, isMuted, onPlayToggl
       </div>
 
       {/* Control Panel - Right Side */}
-      <div className="flex w-80 flex-col items-center justify-center gap-6 rounded-2xl border border-[#d4a574]/20 bg-[#0f0c0a]/60 p-8 backdrop-blur-sm">
+      <div className="flex w-80 flex-col items-center justify-center gap-6 rounded-2xl border border-[#d4a574]/20 bg-[#0f0c0a]/60 p-8 backdrop-blur-sm min-h-0 overflow-y-auto">
         <div className="text-center">
           <h2 className="text-2xl font-semibold text-white mb-2">Wedding Memory</h2>
-          <p className="text-sm text-[#d4a574]/70">Scan QR code to unlock</p>
+          <p className="text-sm text-[#d4a574]/70">QR Scanned ✓</p>
         </div>
 
         {/* Status Indicator */}
         <div className="w-full rounded-lg bg-[#1a0f08]/50 p-4 text-center">
-          {videoSrc ? (
+          {videoSrc && isVideoReady ? (
             <div>
               <div className="mb-2 flex justify-center">
                 <div className="h-3 w-3 rounded-full bg-green-400 animate-pulse"></div>
               </div>
-              <p className="text-xs text-green-400">Video Ready</p>
+              <p className="text-xs text-green-400">Video Playing</p>
             </div>
-          ) : (
+          ) : videoSrc ? (
             <div>
               <div className="mb-2 flex justify-center">
                 <div className="h-3 w-3 rounded-full bg-yellow-400 animate-pulse"></div>
               </div>
-              <p className="text-xs text-yellow-400">Waiting...</p>
+              <p className="text-xs text-yellow-400">Loading...</p>
+            </div>
+          ) : (
+            <div>
+              <div className="mb-2 flex justify-center">
+                <div className="h-3 w-3 rounded-full bg-red-400 animate-pulse"></div>
+              </div>
+              <p className="text-xs text-red-400">No Video</p>
             </div>
           )}
         </div>
@@ -122,9 +137,9 @@ export default function FrameDisplay({ videoSrc, isPlaying, isMuted, onPlayToggl
 
         {/* Info Text */}
         <div className="text-center text-[10px] text-[#8b7355]/60 space-y-1 pt-4 border-t border-[#3a2517]">
-          <p>Scan QR code from the start screen</p>
-          <p>or use the scanner to unlock</p>
-          <p>your wedding memory</p>
+          <p>Enjoy your wedding memory</p>
+          <p>Use controls to pause</p>
+          <p>and control audio</p>
         </div>
       </div>
     </div>
