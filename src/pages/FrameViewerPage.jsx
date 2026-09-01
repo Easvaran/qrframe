@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { AlertTriangle } from 'lucide-react'
-import FrameDisplay from '../components/FrameDisplay'
+import MindARScene from '../ar/MindARScene'
 import QRScanner from '../components/QRScanner'
 import StartAR from '../components/StartAR'
 import NetworkError from '../components/NetworkError'
@@ -11,11 +11,10 @@ const MEMORY_ID = 'wedding-001'
 export default function FrameViewerPage() {
   const memory = getMemory(MEMORY_ID)
   const [showScanner, setShowScanner] = useState(false)
-  const [videoReady, setVideoReady] = useState(false)
-  const [isPlaying, setIsPlaying] = useState(true)
-  const [isMuted, setIsMuted] = useState(true)
-  const [deviceError, setDeviceError] = useState('')
+  const [arReady, setArReady] = useState(false)
+  const [arStatus, setArStatus] = useState('INITIAL')
   const [networkError, setNetworkError] = useState('')
+  const [deviceError, setDeviceError] = useState('')
   const videoRef = useRef(null)
 
   // Check if video assets are accessible
@@ -32,40 +31,21 @@ export default function FrameViewerPage() {
   const handleQrScanned = (qrValue) => {
     console.log('QR Scanned:', qrValue)
     setShowScanner(false)
-    setVideoReady(true)
-    setIsPlaying(true)
-    // Auto-play video after short delay
-    setTimeout(() => {
-      if (videoRef.current) {
-        videoRef.current.play().catch((err) => {
-          console.log('Auto-play blocked, user gesture required')
-        })
-      }
-    }, 500)
+    setArReady(true)
   }
 
-  const handlePlayToggle = () => {
-    const video = document.querySelector('video[playsinline]')
-    if (video) {
-      if (isPlaying) {
-        video.pause()
-      } else {
-        video.play()
-      }
-      setIsPlaying(!isPlaying)
-    }
+  const handleArTracking = (status) => {
+    setArStatus(status)
+    console.log('AR Status:', status)
   }
 
-  const handleMuteToggle = () => {
-    const video = document.querySelector('video[playsinline]')
-    if (video) {
-      video.muted = !isMuted
-      setIsMuted(!isMuted)
-    }
+  const handleArError = (error) => {
+    setDeviceError(error)
+    console.error('AR Error:', error)
   }
 
   return (
-    <main className="relative h-[100dvh] overflow-hidden bg-[#0f0c0a]">
+    <main className="relative h-[100dvh] overflow-hidden bg-black">
       {/* Show Network Error */}
       {networkError && (
         <NetworkError
@@ -78,26 +58,24 @@ export default function FrameViewerPage() {
       )}
 
       {/* Show Start Screen initially */}
-      {!showScanner && !videoReady && !networkError && (
+      {!showScanner && !arReady && !networkError && (
         <StartAR onStart={() => setShowScanner(true)} />
       )}
 
       {/* Show Scanner */}
-      {showScanner && !videoReady && (
+      {showScanner && !arReady && (
         <div className="h-full w-full">
           <QRScanner onQrDetected={handleQrScanned} title="Scan QR Code" />
         </div>
       )}
 
-      {/* Show Frame with Video */}
-      {videoReady && !networkError && (
-        <FrameDisplay
+      {/* Show AR Experience with Auto-Playing Video */}
+      {arReady && !networkError && memory && (
+        <MindARScene
           videoSrc={memory.video}
-          isPlaying={isPlaying}
-          isMuted={isMuted}
-          onPlayToggle={handlePlayToggle}
-          onMuteToggle={handleMuteToggle}
-          videoRef={videoRef}
+          targetSrc={memory.target}
+          onTracking={handleArTracking}
+          onError={handleArError}
         />
       )}
 
