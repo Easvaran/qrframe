@@ -53,7 +53,7 @@ export const APP_CONFIG = {
   },
 
   // Logging configuration
-  debug: isDevelopment,
+  debug: !import.meta.env.PROD,
 
   // API endpoints (for future use)
   api: {
