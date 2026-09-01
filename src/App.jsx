@@ -1,7 +1,7 @@
-import ARMemoryPage from './pages/ARMemoryPage'
+import FrameViewerPage from './pages/FrameViewerPage'
 
 function App() {
-  return <ARMemoryPage />
+  return <FrameViewerPage />
 }
 
 export default App
