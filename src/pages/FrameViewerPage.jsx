@@ -3,6 +3,7 @@ import { AlertTriangle } from 'lucide-react'
 import FrameDisplay from '../components/FrameDisplay'
 import QRScanner from '../components/QRScanner'
 import StartAR from '../components/StartAR'
+import NetworkError from '../components/NetworkError'
 import { getMemory } from '../data/memories'
 
 const MEMORY_ID = 'wedding-001'
@@ -14,7 +15,19 @@ export default function FrameViewerPage() {
   const [isPlaying, setIsPlaying] = useState(true)
   const [isMuted, setIsMuted] = useState(true)
   const [deviceError, setDeviceError] = useState('')
+  const [networkError, setNetworkError] = useState('')
   const videoRef = useRef(null)
+
+  // Check if video assets are accessible
+  useEffect(() => {
+    if (memory?.video) {
+      fetch(memory.video, { method: 'HEAD' })
+        .catch((err) => {
+          console.error('Video asset not accessible:', err)
+          setNetworkError('Video assets could not be loaded. Check your network connection.')
+        })
+    }
+  }, [memory])
 
   const handleQrScanned = (qrValue) => {
     console.log('QR Scanned:', qrValue)
@@ -53,8 +66,19 @@ export default function FrameViewerPage() {
 
   return (
     <main className="relative h-[100dvh] overflow-hidden bg-[#0f0c0a]">
+      {/* Show Network Error */}
+      {networkError && (
+        <NetworkError
+          errorMessage={networkError}
+          onRetry={() => {
+            setNetworkError('')
+            window.location.reload()
+          }}
+        />
+      )}
+
       {/* Show Start Screen initially */}
-      {!showScanner && !videoReady && (
+      {!showScanner && !videoReady && !networkError && (
         <StartAR onStart={() => setShowScanner(true)} />
       )}
 
@@ -66,7 +90,7 @@ export default function FrameViewerPage() {
       )}
 
       {/* Show Frame with Video */}
-      {videoReady && (
+      {videoReady && !networkError && (
         <FrameDisplay
           videoSrc={memory.video}
           isPlaying={isPlaying}
@@ -78,7 +102,7 @@ export default function FrameViewerPage() {
       )}
 
       {/* Error Display */}
-      {deviceError && (
+      {deviceError && !networkError && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/75 px-6">
           <div className="max-w-sm rounded-[24px] border border-[#d8b789]/50 bg-[#1b1715]/90 p-5 text-center">
             <AlertTriangle className="mx-auto h-8 w-8 text-[#e2bf85]" />

@@ -1,7 +1,9 @@
 import { QRCodeSVG } from 'qrcode.react'
+import { APP_CONFIG } from '../config/appConfig'
 
 export default function StartAR({ onStart }) {
-  const qrValue = 'https://wedding-memory.example.com/unlock?id=wedding-001'
+  // Generate QR code dynamically based on current environment
+  const qrValue = APP_CONFIG.qr.getMemoryUrl('wedding-001')
 
   return (
     <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#120f0d]/78 px-5">
@@ -40,6 +42,13 @@ export default function StartAR({ onStart }) {
         >
           Start Scanner
         </button>
+
+        {/* Debug Info - Development only */}
+        {import.meta.env.DEV && (
+          <div className="mt-6 rounded-lg bg-[#000]/50 p-3 text-[9px] text-[#8b7355]/70 font-mono">
+            <p className="break-all">QR URL: {qrValue}</p>
+          </div>
+        )}
       </div>
     </div>
   )
